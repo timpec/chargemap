@@ -1,36 +1,36 @@
 'use strict';
-const connecionModel = require('../models/connecion');
+const connectionModel = require('../models/connection');
 
-const connecion_list_get = async (req, res) => {
+const connection_list_get = async (req, res) => {
   try {
-    const connecions = await connecionModel.find();
-    res.send('With this endpoint you can get connecions');
-    res.send(connecions);
+    const connections = await connectionModel.find().populate('ConnectionType', 'Level'); //, 'CurrentType'
+    //res.send('With this endpoint you can get connections');
+    res.json(connections);
   }
   catch(e) {
-    console.error('connecion_list_get', e);
+    console.error('connection_list_get', e);
     res.status(500).json({message: e.message});
   }
 };
 
-const connecion_get = async (req, res) => {
+const connection_get = async (req, res) => {
   try {
-    const connecions = await connecionModel.findById(req.params.id);
-    res.send('With this endpoint you can get one connecion');
-    res.send(connecions);
+    const connections = await connectionModel.findById(req.params.id);
+    //res.send('With this endpoint you can get one connection');
+    res.json(connections);
   }
   catch(e) {
-    console.error('connecion_get', e);
+    console.error('connection_get', e);
     res.status(500).json({message: e.message});
   }
 };
 
-const connecion_post = (req, res) => {
-  res.send('With this endpoint you can add connecions');
+const connection_post = (req, res) => {
+  res.send('With this endpoint you can add connections');
 };
 
 module.exports = {
-  connecion_list_get,
-  connecion_get,
-  connecion_post,
+  connection_list_get,
+  connection_get,
+  connection_post,
 };
