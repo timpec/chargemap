@@ -3,7 +3,7 @@ const levelModel = require('../models/level');
 
 const level_list_get = async (req, res) => {
   try {
-    const level = await levelModel.find().populate('Connections');
+    const level = await levelModel.find();
     //res.send('With this endpoint you can get level');
     res.json(level);
   }

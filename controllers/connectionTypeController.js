@@ -3,7 +3,7 @@ const connectionTypeModel = require('../models/connectionType');
 
 const connectionType_list_get = async (req, res) => {
   try {
-    const connectionType = await connectionTypeModel.find().populate('Connections');
+    const connectionType = await connectionTypeModel.find();
     //res.send('With this endpoint you can get connectionType');
     res.json(connectionType);
   }
