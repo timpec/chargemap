@@ -2,8 +2,20 @@
 const stationModel = require('../models/station');
 
 const station_list_get = async (req, res) => {
+  if (req.query.topLeft != undefined && req.query.topRight != undefined && req.query.bottomRight != undefined) {
+    console.log(req.query)
+    res.json(await station_get_polygon(req.quary));
+  } else {
+  var limit = parseInt(req.params.limit, 10)
+  if (limit === undefined) {
+    limit = 10;
+  }
+  console.log(limit)
   try {
-    const stations = await stationModel.find().populate('Connections');
+    const stations = await stationModel
+    .find()
+    .limit(limit)
+    .populate('Connections');
     //res.send('With this endpoint you can get stations');
     res.json(stations);
   }
@@ -11,7 +23,53 @@ const station_list_get = async (req, res) => {
     console.error('station_list_get', e);
     res.status(500).json({message: e.message});
   }
+}
 };
+
+const station_get_polygon = async (params) => {
+  console.log("Poly", params);
+
+  const topLeft = JSON.parse(params.topLeft);
+  const topRight = JSON.parse(params.topRight);
+  const bottomRight = JSON.parse(params.bottomRight);
+  //const bottomLeft = JSON.parse(polyObj.bottomLeft);
+  console.log(params.topRight)
+
+  const polygon = {
+    type: 'Polygon',
+    coordinates: [[
+      [topLeft.lng, topLeft.lon],
+      [topRight. lng, topRight.lon],
+      [bottomRight.lng, bottomRight.lon],
+      [topLeft.lng, topLeft.lon]
+    ]]
+  }
+  try {
+    return await stationModel.find({}).where('Location').within(polygon).populate([
+      {
+        path: "Connections",
+        model: "Connection",
+        populate: [
+          {
+            path: "ConnectionTypeID",
+            model: "ConnectionType"
+          },
+          {
+            path: "CurrentTypeID",
+            model: "CurrentType"
+          },
+          {
+            path: "LevelID",
+            model: "Level"
+          }
+        ]
+      }
+    ])
+  }
+  catch (e) {
+    return e;
+  }
+}
 
 const station_get = async (req, res) => {
   try {
@@ -75,6 +133,7 @@ const station_post = async (req, res) => {
 
 module.exports = {
   station_list_get,
+  station_get_polygon,
   station_get,
   station_post,
 };
