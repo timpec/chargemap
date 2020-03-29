@@ -6,9 +6,13 @@ const station_list_get = async (req, res) => {
     console.log(req.query)
     res.json(await station_get_polygon(req.query));
   } else {
-  var limit = parseInt(req.params.limit, 10)
+    console.log("R",req.query.limit)
+  var limit = parseInt(req.query.limit, 10)
   if (limit === undefined) {
     limit = 10;
+  }
+  else {
+    limit = parseInt(req.query.limit, 10)
   }
   console.log(limit)
   try {
