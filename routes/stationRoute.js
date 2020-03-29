@@ -11,4 +11,8 @@ router.get('/:id', stationController.station_get);
 
 router.post('/', passport.authenticate('jwt', {session: false}), stationController.station_post);
 
+router.put('/', passport.authenticate('jwt', {session: false}), stationController.station_modify);
+
+router.delete('/:id', stationController.station_delete);
+
 module.exports = router;

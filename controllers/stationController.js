@@ -4,7 +4,7 @@ const stationModel = require('../models/station');
 const station_list_get = async (req, res) => {
   if (req.query.topLeft != undefined && req.query.topRight != undefined && req.query.bottomRight != undefined) {
     console.log(req.query)
-    res.json(await station_get_polygon(req.quary));
+    res.json(await station_get_polygon(req.query));
   } else {
   var limit = parseInt(req.params.limit, 10)
   if (limit === undefined) {
@@ -33,15 +33,17 @@ const station_get_polygon = async (params) => {
   const topRight = JSON.parse(params.topRight);
   const bottomRight = JSON.parse(params.bottomRight);
   //const bottomLeft = JSON.parse(polyObj.bottomLeft);
-  console.log(params.topRight)
+  console.log(topLeft.lng, topLeft.lat)
+  console.log(topRight.lng, topRight.lat)
+  console.log(bottomRight.lng, bottomRight.lat)
 
   const polygon = {
     type: 'Polygon',
     coordinates: [[
-      [topLeft.lng, topLeft.lon],
-      [topRight. lng, topRight.lon],
-      [bottomRight.lng, bottomRight.lon],
-      [topLeft.lng, topLeft.lon]
+      [topLeft.lng, topLeft.lat],
+      [topRight. lng, topRight.lat],
+      [bottomRight.lng, bottomRight.lat],
+      [topLeft.lng, topLeft.lat]
     ]]
   }
   try {
@@ -104,36 +106,78 @@ const station_get = async (req, res) => {
 
 const station_post = async (req, res) => {
   try {
+
+    console.log(req.body)
+    const listOfConnections = []
+    req.body.Connections.forEach(item => {
+        listOfConnections.push(item);
+    })
+
     const station = await stationModel.create({
       Title: req.body.Title,
       AddressLine1: req.body.AdressLine1,
       Town: req.body.Town,
       StateOrProvince: req.body.StateOrProvince,
       Postcode: req.body.Postcode,
-      Connections: "Should add list of cellections first", //TODO
+      Connections: listOfConnections,
       Location: {
-        type: {
-          type: String,
-          enum: ['Point'],
-          required: true,}
-      },
-      coordinates: {
-        type: [Number], // First is longitude, second latitude
-        required: true,
+        type: "Point",
+        coordinates: [req.body.Location[0], req.body.Location[1]]
       }
     });
-    res.send('Added station: ', station.Title)
+    const newID = await stationModel.find({Title: req.body.Title})
+    res.json({message: 'Added station', newID})
   }
   catch(e) {
     console.error('station_get', e);
     res.status(500).json({message: e.message});
   }
-  //res.send('With this endpoint you can add stations');
 };
+
+const station_modify = async (req, res) => {
+  try {
+    console.log(req.body)
+    const station = await stationModel.findByIdAndUpdate({_id: req.body.id}, {Title: req.body.Title});
+    res.send('Modified stations "' + station.Title + '" title')
+  }
+  catch(e) {
+    console.error('station_get', e);
+    res.status(500).json({message: e.message});
+  }
+};
+
+const station_delete = async (req, res) => {
+  try {
+  const station = (await stationModel.findByIdAndDelete(req.params.id).populate([
+    {
+      path: "Connections",
+      model: "Connection",
+      populate: [
+        {
+          path: "ConnectionTypeID",
+          model: "ConnectionType"
+        },
+        {
+          path: "CurrentTypeID",
+          model: "CurrentType"
+        },
+        {
+          path: "LevelID",
+          model: "Level"
+        }
+      ]
+    }
+  ]))
+  res.json({message: "Deleted station", station});
+}
+catch (e) {
+  res.json({message: e.message})
+}}
 
 module.exports = {
   station_list_get,
-  station_get_polygon,
   station_get,
   station_post,
+  station_modify,
+  station_delete
 };
