@@ -48,8 +48,9 @@ app.use('/connection', connectionRoute);
 app.use('/currentType', currentTypeRoute);
 app.use('/connectionType', connectionTypeRoute);
 app.use('/level', levelRoute);
-app.use('/user', userRoute);
 */
+app.use('/user', userRoute);
+
 
 db.on('connected', () => {
   app.listen(3000);
