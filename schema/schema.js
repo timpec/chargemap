@@ -138,7 +138,6 @@ const {
         resolve: async (parent, args) => {
           try {
             return await stations.find().limit(args.limit ? +args.limit : 10);
-            console.log(t)
           }
           catch (e) {
             return new Error(e.message);
@@ -159,6 +158,54 @@ const {
                   return new Error(e.message);
               }
           }
+      },
+      stationPoly: {
+        type: new GraphQLNonNull(new GraphQLList(station)),
+        description: 'Get all stations inside defined polygon. Insert coordinates like: [longitude, latitude]',
+        args: {
+            topLeft: { type: new GraphQLList(GraphQLFloat) },
+            topRight: { type: new GraphQLList(GraphQLFloat) },
+            bottomRight: { type: new GraphQLList(GraphQLFloat) }
+        },
+        resolve: async (parent, args) => {
+
+          // Input longitude before latitude!
+          const polygon = {
+            type: 'Polygon',
+            coordinates: [[
+              [args.topLeft[0], args.topLeft[1]],
+              [args.topRight[0], args.topRight[1]],
+              [args.bottomRight[0], args.bottomRight[1]],
+              [args.topLeft[0], args.topLeft[1]]
+            ]]
+          }
+          //console.log(polygon)
+          try {
+            return await stations.find({}).where('Location').within(polygon).populate([
+              {
+                path: "Connections",
+                model: "Connection",
+                populate: [
+                  {
+                    path: "ConnectionTypeID",
+                    model: "ConnectionType"
+                  },
+                  {
+                    path: "CurrentTypeID",
+                    model: "CurrentType"
+                  },
+                  {
+                    path: "LevelID",
+                    model: "Level"
+                  }
+                ]
+              }
+            ])
+          }
+          catch (e) {
+            return new Error(e.message);
+          }
+        },
       },
       connectionTypes: {
         type: new GraphQLNonNull(new GraphQLList(connectionType)),
@@ -205,17 +252,21 @@ const {
     fields: {
       addStation: {
         type: station,
-        description: 'Add a new chargestation',
+        description: 'Add a new chargestation. Insert location coordinates like: [longitude, latitude]',
         args: {
           Title: {type: new GraphQLNonNull(GraphQLString)},
           AddressLine1: {type: new GraphQLNonNull(GraphQLString)},
           Town: {type: new GraphQLNonNull(GraphQLString)},
           StateOrProvince: {type: new GraphQLNonNull(GraphQLString)},
           Postcode: {type: new GraphQLNonNull(GraphQLString)},
-          //Connetions: {type: new GraphQLNonNull(new GraphQLList(connection))},
-          //Location: {type: new GraphQLNonNull(gql_geoJSON)},
+          Connetions: {type: new GraphQLList(GraphQLID)},
+          Location: { type: new GraphQLList(GraphQLFloat) }
         },
-        resolve(parent, args) {
+        resolve: (parent, args, {req, res, checkAuth}) => {
+          const coords = args.Location
+          //console.log(coords)
+          try {
+          checkAuth(req, res);
           const newStation = new stations({
             Title: args.Title,
             AddressLine1: args.AddressLine1,
@@ -223,9 +274,17 @@ const {
             StateOrProvince: args.StateOrProvince,
             Postcode: args.Postcode,
             Connections: args.Connections,
-            //Location: args.Title,
+            Location: { 
+              type: "Point",
+              coordinates: [coords[0], coords[1]]
+            }
           });
+          console.log("Added station with title: ",args.Title)
           return newStation.save();
+        }
+        catch(e) {
+          return new Error(e.message);
+        }
         },
       },
       modifyStation: {
@@ -235,8 +294,10 @@ const {
           id: {type: new GraphQLNonNull(GraphQLID)},
           Title: {type: GraphQLString},
         },
-        resolve: async (parent, args) => {
+        resolve: async (parent, args, {req, res, checkAuth}) => {
           try {
+            checkAuth(req, res);
+            console.log("Modified station with id: ",args)
             return await stations.findByIdAndUpdate(args.id, args, {new:true});
           }
           catch (e) {
@@ -250,10 +311,11 @@ const {
         args: {
           id: {type: new GraphQLNonNull(GraphQLID)}
         },
-        resolve: async (parent, args) => {
+        resolve: async (parent, args, {req, res, checkAuth}) => {
           try {
+            checkAuth(req, res);
             console.log("Deleted station with id: ",args)
-            return await stations.findByIdAndDelete(args)
+            return await stations.findByIdAndDelete(args.id)
           }
           catch (e) {
             return new Error(e.message);
@@ -262,7 +324,7 @@ const {
       }
     },
   });
-  
+
 module.exports = new GraphQLSchema({
     query: RootQuery,
     mutation: Mutation,

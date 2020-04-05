@@ -31,15 +31,16 @@ const checkAuth = (req, res) => {
   })(req, res)
 };
 
-//app.use('/auth', authRoute);
+app.use('/auth', authRoute);
 
 app.use(
-  '/graphql',
-  graphqlHTTP({
-    schema: MyGraphQLSchema,
-    graphiql: true,
-  }),
-);
+  '/graphql', (req, res) => {
+    graphqlHTTP({
+      schema: MyGraphQLSchema,
+      graphiql: true,
+      context: {req, res, checkAuth},
+    })(req, res);
+  });
 
 /*
 app.use('/station', stationRoute);
