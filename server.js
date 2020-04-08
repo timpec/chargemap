@@ -6,16 +6,24 @@ const graphqlHTTP = require('express-graphql');
 const MyGraphQLSchema = require('./schema/schema');
 //const cors = require('cors');
 const db = require('./database/db');
-const stationRoute = require('./routes/stationRoute');
-const connectionRoute = require('./routes/connectionRoute');
-const currentTypeRoute = require('./routes/currentTypeRoute');
-const connectionTypeRoute = require('./routes/connectionTypeRoute');
-const levelRoute = require('./routes/levelRoute');
+//const stationRoute = require('./routes/stationRoute');
+//const connectionRoute = require('./routes/connectionRoute');
+//const currentTypeRoute = require('./routes/currentTypeRoute');
+//const connectionTypeRoute = require('./routes/connectionTypeRoute');
+//const levelRoute = require('./routes/levelRoute');
 const userRoute = require('./routes/userRoute');
 const passport = require('./utils/pass.js');
 const authRoute = require('./routes/authRoute.js'); 
 const app = express();
+const fs = require('fs');
 
+const sslkey = fs.readFileSync('../../ssl-key.pem');
+const sslcert = fs.readFileSync('../../ssl-cert.pem')
+
+const options = {
+      key: sslkey,
+      cert: sslcert
+};
 
 //app.use(cors());
 app.use(express.json());
@@ -51,7 +59,11 @@ app.use('/level', levelRoute);
 */
 app.use('/user', userRoute);
 
-
 db.on('connected', () => {
-  app.listen(3000);
+  process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+  if (process.env.NODE_ENV === 'production') {
+    require('./production')(app, process.env.PORT);
+  } else {
+    require('./localhost')(app, process.env.HTTPS_PORT, process.env.HTTP_PORT);
+  }
 });

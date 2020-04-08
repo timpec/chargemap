@@ -1,10 +1,14 @@
 'use strict';
 const userModel = require('../models/user');
+const bcrypt = require('bcrypt');
+const saltRound = 12;
+
 
 const user_list_get = async (req, res) => {
   try {
     const user = await userModel.find();
     //res.send('With this endpoint you can get user');
+    console.log(user)
     res.json(user);
   }
   catch(e) {
@@ -17,6 +21,7 @@ const user_get = async (req, res) => {
   try {
     const user = await userModel.findById(req.params.id);
     //res.send('With this endpoint you can get one user');
+    delete user.password
     res.json(user);
   }
   catch(e) {
@@ -27,10 +32,11 @@ const user_get = async (req, res) => {
 
 const user_post = async (req, res) => {
   try {
+    const hash = await bcrypt.hash(req.body.password, saltRound);
     const myUser = await userModel.create({
       username:  req.body.username,
       //Email: //req.body.Email,
-      password: req.body.password
+      password: hash //req.body.password
     });
       res.send(`Added user: ${myUser.username}`);
     }
@@ -42,9 +48,9 @@ const user_post = async (req, res) => {
 
 const getUserLogin = async (params) => {
     try {
-      console.log("B", params);
+      //console.log("B", params);
       const [user] = await userModel.find({username: params})
-      console.log("T", user)
+      //console.log("T", user)
       return user;
     } 
     catch (e) {

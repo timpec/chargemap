@@ -4,9 +4,9 @@ const passport = require('passport');
 
 const login = (req, res) => {
   passport.authenticate('local', {session: false}, (err, user, info) => {
-    console.log(user)
     console.log(info)
     const userLogged = user._doc
+    delete userLogged.password;
     if (err || !user) {
         return res.status(400).json({
             message: 'Something is not right',
@@ -18,7 +18,8 @@ const login = (req, res) => {
            res.send(err);
        }
        // generate a signed son web token with the contents of user object and return it in the response
-       const token = jwt.sign(user._doc, 'your_jwt_secret');
+       console.log(userLogged)
+       const token = jwt.sign(userLogged, 'your_jwt_secret');
        return res.json({userLogged, token});
     });
   })(req, res);
