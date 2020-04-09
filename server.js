@@ -15,21 +15,24 @@ const userRoute = require('./routes/userRoute');
 const passport = require('./utils/pass.js');
 const authRoute = require('./routes/authRoute.js'); 
 const app = express();
-const fs = require('fs');
+const helmet = require('helmet');
 
-const sslkey = fs.readFileSync('../../ssl-key.pem');
-const sslcert = fs.readFileSync('../../ssl-cert.pem')
-
-const options = {
-      key: sslkey,
-      cert: sslcert
-};
+app.use(helmet());
 
 //app.use(cors());
 app.use(express.json());
 app.use(express.urlencoded({extended: true}));
 app.use(passport.initialize());
 app.use(passport.session());
+
+process.env.NODE_ENV = process.env.NODE_ENV || 'development';
+if (process.env.NODE_ENV === 'production') {
+  console.log("Production");
+  require('./production')(app, process.env.PORT);
+} else {
+  console.log("Development");
+  require('./localhost')(app, process.env.HTTPS_PORT, process.env.HTTP_PORT);
+}
 
 const checkAuth = (req, res) => {
   passport.authenticate('jwt', {session: false}, (err, user) =>{
@@ -60,10 +63,5 @@ app.use('/level', levelRoute);
 app.use('/user', userRoute);
 
 db.on('connected', () => {
-  process.env.NODE_ENV = process.env.NODE_ENV || 'development';
-  if (process.env.NODE_ENV === 'production') {
-    require('./production')(app, process.env.PORT);
-  } else {
-    require('./localhost')(app, process.env.HTTPS_PORT, process.env.HTTP_PORT);
-  }
+  console.log("Listening")
 });
